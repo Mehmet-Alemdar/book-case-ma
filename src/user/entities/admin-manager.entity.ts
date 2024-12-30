@@ -7,8 +7,8 @@ export class AdminManager {
   id: number;
 
   @ManyToOne(() => User)
-  adminId: User;
+  admin: User;
 
   @ManyToOne(() => User)
-  managerId: User;
+  manager: User;
 }

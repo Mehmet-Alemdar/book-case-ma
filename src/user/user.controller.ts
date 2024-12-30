@@ -9,6 +9,7 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
+import { AssignManagerToStoreDto } from './dto/assign-manager-to-store.dto';
 import { User } from './entities/user.entity';
 import { User as UserDecorator } from '../auth/user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -41,5 +42,19 @@ export class UserController {
   @UsePipes(new ValidationPipe())
   async login(@Body() loginDto: LoginDto): Promise<{ token: string }> {
     return this.userService.login(loginDto);
+  }
+
+  @Post('assign-manager-to-store')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.ADMIN)
+  @UsePipes(new ValidationPipe())
+  async assignManagerToStore(
+    @Body() assignManagerToStoreDto: AssignManagerToStoreDto,
+    @UserDecorator() currentUser: User,
+  ) {
+    return this.userService.assignManagerToStore(
+      assignManagerToStoreDto,
+      currentUser,
+    );
   }
 }

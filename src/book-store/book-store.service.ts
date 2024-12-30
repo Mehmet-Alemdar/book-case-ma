@@ -2,7 +2,8 @@ import { Injectable, HttpException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
-import { BookStore } from './book-store.entity';
+import { BookStore } from './entities/book-store.entity';
+import { BookStoreManager } from './entities/book-store-manager.entity';
 import { CreateBookStoreDto } from './dto/create-book-store.dto';
 
 @Injectable()
@@ -10,6 +11,8 @@ export class BookStoreService {
   constructor(
     @InjectRepository(BookStore)
     private bookStoreRepository: Repository<BookStore>,
+    @InjectRepository(BookStoreManager)
+    private bookStoreManagerRepository: Repository<BookStoreManager>,
   ) {}
 
   async createBookStore(
@@ -17,7 +20,6 @@ export class BookStoreService {
     currentUser: User,
   ) {
     const bookStore = createBookStoreDto;
-    bookStore['admin'] = currentUser.id;
 
     const existingBookStore = await this.bookStoreRepository.findOne({
       where: { name: bookStore.name },
@@ -27,6 +29,14 @@ export class BookStoreService {
     }
 
     const newBookStore = await this.bookStoreRepository.create(bookStore);
-    return this.bookStoreRepository.save(newBookStore);
+    const sadevBookStore = await this.bookStoreRepository.save(newBookStore);
+
+    const bookStoreManager = new BookStoreManager();
+    bookStoreManager['bookStore'] = sadevBookStore;
+    bookStoreManager['user'] = currentUser;
+
+    await this.bookStoreManagerRepository.save(bookStoreManager);
+
+    return bookStoreManager;
   }
 }
