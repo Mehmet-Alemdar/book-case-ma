@@ -1,7 +1,8 @@
 import { Injectable, HttpException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from './user.entity';
+import { User } from './entities/user.entity';
+import { AdminManager } from './entities/admin-manager.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { Role } from './role.enum';
@@ -13,6 +14,8 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(AdminManager)
+    private adminManagerRepository: Repository<AdminManager>,
   ) {}
 
   async createAdmin(createUserDto: CreateUserDto): Promise<User> {
@@ -40,9 +43,8 @@ export class UserService {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
     const user = createUserDto;
-    user['role'] = Role.USER;
+    user['role'] = Role.STORE_MANAGER;
     user['password'] = hashedPassword;
-    user['createdBy'] = currentUser.id;
 
     const existingUser = await this.userRepository.findOne({
       where: { email: user.email },
@@ -51,8 +53,18 @@ export class UserService {
       throw new HttpException('Email is already taken', 400);
     }
 
-    const newUser = this.userRepository.create(user);
-    return this.userRepository.save(newUser);
+    const newUser = await this.userRepository.create(user);
+    const savedUser = await this.userRepository.save(newUser);
+
+    if (currentUser.role === Role.ADMIN) {
+      const adminManager = new AdminManager();
+      adminManager.adminId = currentUser;
+      adminManager.managerId = savedUser;
+
+      await this.adminManagerRepository.save(adminManager);
+    }
+
+    return savedUser;
   }
 
   async login(loginDto: LoginDto): Promise<{ token: string }> {

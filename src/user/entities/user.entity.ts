@@ -1,11 +1,5 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  Unique,
-  ManyToOne,
-} from 'typeorm';
-import { Role } from './role.enum';
+import { Entity, Column, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { Role } from './../role.enum';
 
 @Entity()
 @Unique(['email'])
@@ -28,7 +22,4 @@ export class User {
     default: Role.USER,
   })
   role: string;
-
-  @ManyToOne(() => User)
-  createdBy: User;
 }
