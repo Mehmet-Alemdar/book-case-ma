@@ -7,7 +7,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateAdminDto } from './dto/create-admin.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { User } from './user.entity';
@@ -23,8 +22,8 @@ export class UserController {
 
   @Post('admin')
   @UsePipes(new ValidationPipe())
-  async createAdmin(@Body() createAdminDto: CreateAdminDto): Promise<User> {
-    return this.userService.createAdmin(createAdminDto);
+  async createAdmin(@Body() createUserDto: CreateUserDto): Promise<User> {
+    return this.userService.createAdmin(createUserDto);
   }
 
   @Post('create')

@@ -2,7 +2,7 @@ import { Injectable, HttpException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
-import { CreateAdminDto } from './dto/create-admin.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { Role } from './role.enum';
 import * as bcrypt from 'bcrypt';
@@ -15,10 +15,10 @@ export class UserService {
     private userRepository: Repository<User>,
   ) {}
 
-  async createAdmin(createAdminDto: CreateAdminDto): Promise<User> {
-    const hashedPassword = await bcrypt.hash(createAdminDto.password, 10);
+  async createAdmin(createUserDto: CreateUserDto): Promise<User> {
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
-    const admin = createAdminDto;
+    const admin = createUserDto;
     admin['role'] = Role.ADMIN;
     admin['password'] = hashedPassword;
 
@@ -34,7 +34,7 @@ export class UserService {
   }
 
   async createUser(
-    createUserDto: CreateAdminDto,
+    createUserDto: CreateUserDto,
     currentUser: User,
   ): Promise<User> {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);

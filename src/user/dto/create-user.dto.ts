@@ -4,7 +4,6 @@ import {
   MinLength,
   MaxLength,
   IsNotEmpty,
-  IsOptional,
   Matches,
 } from 'class-validator';
 
@@ -34,8 +33,4 @@ export class CreateUserDto {
     message: 'Password must contain at least one special character.',
   })
   password: string;
-
-  @IsString()
-  @IsOptional()
-  role: string;
 }
