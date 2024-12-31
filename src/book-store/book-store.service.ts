@@ -39,4 +39,21 @@ export class BookStoreService {
 
     return bookStoreManager;
   }
+
+  async findAllBookStores(
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{
+    data: BookStore[];
+    total: number;
+    currentPage: number;
+    limit: number;
+  }> {
+    const [data, total] = await this.bookStoreRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return { data, total, currentPage: page, limit };
+  }
 }

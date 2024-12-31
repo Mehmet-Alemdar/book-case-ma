@@ -15,6 +15,6 @@ export class Book {
   @Column()
   quantity: number;
 
-  @ManyToOne(() => BookStore)
+  @ManyToOne(() => BookStore, { eager: true })
   bookStore: BookStore;
 }

@@ -1,6 +1,8 @@
 import {
   Controller,
   Post,
+  Get,
+  Query,
   Body,
   UsePipes,
   ValidationPipe,
@@ -8,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { BookStoreService } from './book-store.service';
 import { CreateBookStoreDto } from './dto/create-book-store.dto';
+import { FindAllBookStoresDto } from './dto/find-all-book-stores.dto';
+import { BookStore } from './entities/book-store.entity';
 import { User } from '../user/entities/user.entity';
 import { User as UserDecorator } from '../auth/user.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -31,5 +35,14 @@ export class BookStoreController {
       createBookStoreDto,
       currentUser,
     );
+  }
+
+  @Get()
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async findAllBookStores(
+    @Query() query: FindAllBookStoresDto,
+  ): Promise<{ data: BookStore[]; total: number }> {
+    const { page, limit } = query;
+    return this.bookStoreService.findAllBookStores(page, limit);
   }
 }

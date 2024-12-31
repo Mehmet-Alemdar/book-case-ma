@@ -1,6 +1,6 @@
 import { Injectable, HttpException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository, ILike } from 'typeorm';
 import { Book } from './book.entity';
 import { User } from 'src/user/entities/user.entity';
 import { BookStore } from 'src/book-store/entities/book-store.entity';
@@ -21,55 +21,120 @@ export class BookService {
     private bookStoreManagerRepository: Repository<BookStoreManager>,
   ) {}
 
-  async createBook(createBookDto: CreateBookDto, currentUser: User) {
-    const bookStore = await this.bookStoreRepository.findOne({
-      where: { id: createBookDto.bookStoreId },
-    });
-    if (!bookStore) {
-      throw new HttpException('Book store not found', 404);
+  async createBook(
+    createBookDto: CreateBookDto,
+    currentUser: User,
+  ): Promise<{ message: string; data: Book }> {
+    try {
+      const bookStore = await this.bookStoreRepository.findOne({
+        where: { id: createBookDto.bookStoreId },
+      });
+      console.log(bookStore);
+      if (!bookStore) {
+        throw new HttpException('Book store not found', 404);
+      }
+
+      const book = createBookDto;
+      book['admin'] = currentUser.id;
+      book['bookStore'] = bookStore;
+
+      const existingBook = await this.bookRepository.findOne({
+        where: { name: book.name, bookStore: bookStore },
+      });
+      if (existingBook) {
+        throw new HttpException('Book already exists', 400);
+      }
+
+      const newBook = await this.bookRepository.create(book);
+      const savedBook = await this.bookRepository.save(newBook);
+
+      return { message: 'Book created successfully', data: savedBook };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'An unexpected error occurred',
+        error.status || 500,
+      );
     }
-
-    const book = createBookDto;
-    book['admin'] = currentUser.id;
-    book['bookStore'] = bookStore;
-
-    const existingBook = await this.bookRepository.findOne({
-      where: { name: book.name, bookStore: bookStore },
-    });
-    if (existingBook) {
-      throw new HttpException('Book already exists', 400);
-    }
-
-    const newBook = await this.bookRepository.create(book);
-    return this.bookRepository.save(newBook);
   }
 
-  async updateBook(
-    updateBookQuantityDto: UpdateBookQuantityDto,
-    currentUser: User,
-  ) {
-    const bookStore = await this.bookStoreRepository.findOne({
-      where: { id: updateBookQuantityDto.bookStoreId },
-    });
-    if (!bookStore) {
-      throw new HttpException('Book store not found', 404);
-    }
-    const book = await this.bookRepository.findOne({
-      where: { id: updateBookQuantityDto.bookId },
-    });
-    if (!book) {
-      throw new HttpException('Book not found', 404);
-    }
+  async updateBook(updateBookQuantityDto: UpdateBookQuantityDto) {
+    try {
+      const bookStore = await this.bookStoreRepository.findOne({
+        where: { id: updateBookQuantityDto.bookStoreId },
+      });
+      if (!bookStore) {
+        throw new HttpException('Book store not found', 404);
+      }
+      const book = await this.bookRepository.findOne({
+        where: { id: updateBookQuantityDto.bookId, bookStore: bookStore },
+      });
+      if (!book) {
+        throw new HttpException('Book not found', 404);
+      }
 
-    const bookStoreManager = await this.bookStoreManagerRepository.findOne({
-      where: { user: { id: currentUser.id }, bookStore: { id: bookStore.id } },
+      book.quantity = updateBookQuantityDto.quantity;
+      await this.bookRepository.save(book);
+      return { message: 'Book quantity updated successfully' };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'An unexpected error occurred',
+        error.status || 500,
+      );
+    }
+  }
+
+  async findBooksByStoreId(
+    bookStoreId: number,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{
+    data: Book[];
+    total: number;
+    currentPage: number;
+    limit: number;
+  }> {
+    const [books, total] = await this.bookRepository.findAndCount({
+      where: { bookStore: { id: bookStoreId }, quantity: MoreThan(0) },
+      relations: ['bookStore'],
+      take: limit,
+      skip: (page - 1) * limit,
     });
 
-    if (!bookStoreManager) {
-      throw new HttpException('you are not responsible for this store', 401);
-    }
+    return {
+      data: books,
+      total: total,
+      currentPage: page,
+      limit: limit,
+    };
+  }
 
-    book.quantity = updateBookQuantityDto.quantity;
-    return this.bookRepository.save(book);
+  async searchBook(
+    name: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{
+    data: Book[];
+    total: number;
+    currentPage: number;
+    limit: number;
+  }> {
+    const [books, total] = await this.bookRepository.findAndCount({
+      where: { name: ILike(`%${name}%`), quantity: MoreThan(0) },
+      take: limit,
+      skip: (page - 1) * limit,
+    });
+
+    return {
+      data: books,
+      total: total,
+      currentPage: page,
+      limit: limit,
+    };
   }
 }
