@@ -30,7 +30,7 @@ export class BookStoreController {
   async createBookStore(
     @Body() createBookStoreDto: CreateBookStoreDto,
     @UserDecorator() currentUser: User,
-  ) {
+  ): Promise<{ message: string }> {
     return this.bookStoreService.createBookStore(
       createBookStoreDto,
       currentUser,

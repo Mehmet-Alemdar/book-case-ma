@@ -7,5 +7,5 @@ export class AssignManagerToStoreDto {
 
   @IsNumber()
   @IsNotEmpty()
-  storeId: number;
+  bookStoreId: number;
 }

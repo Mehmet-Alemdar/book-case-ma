@@ -1,4 +1,4 @@
-import { Injectable, HttpException } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -26,114 +26,165 @@ export class UserService {
   ) {}
 
   async createAdmin(createUserDto: CreateUserDto): Promise<User> {
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    try {
+      const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
-    const admin = createUserDto;
-    admin['role'] = Role.ADMIN;
-    admin['password'] = hashedPassword;
+      const admin = createUserDto;
+      admin['role'] = Role.ADMIN;
+      admin['password'] = hashedPassword;
 
-    const existingUser = await this.userRepository.findOne({
-      where: { email: admin.email },
-    });
-    if (existingUser) {
-      throw new HttpException('Email is already taken', 400);
+      const existingUser = await this.userRepository.findOne({
+        where: { email: admin.email },
+      });
+      if (existingUser) {
+        throw new HttpException(
+          'Email is already taken',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const user = this.userRepository.create(admin);
+      return this.userRepository.save(user);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'An unexpected error occurred',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
-
-    const user = this.userRepository.create(admin);
-    return this.userRepository.save(user);
   }
 
   async createUser(
     createUserDto: CreateUserDto,
     currentUser: User,
-  ): Promise<User> {
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+  ): Promise<{ message: string }> {
+    try {
+      const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
-    const user = createUserDto;
-    user['role'] = Role.STORE_MANAGER;
-    user['password'] = hashedPassword;
+      const user = createUserDto;
+      user['role'] = Role.STORE_MANAGER;
+      user['password'] = hashedPassword;
 
-    const existingUser = await this.userRepository.findOne({
-      where: { email: user.email },
-    });
-    if (existingUser) {
-      throw new HttpException('Email is already taken', 400);
+      const existingUser = await this.userRepository.findOne({
+        where: { email: user.email },
+      });
+      if (existingUser) {
+        throw new HttpException(
+          'Email is already taken',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const newUser = await this.userRepository.create(user);
+      const savedUser = await this.userRepository.save(newUser);
+
+      if (currentUser.role === Role.ADMIN) {
+        const adminManager = new AdminManager();
+        adminManager.admin = currentUser;
+        adminManager.manager = savedUser;
+
+        await this.adminManagerRepository.save(adminManager);
+      }
+
+      return { message: 'User created successfully' };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'An unexpected error occurred',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
-
-    const newUser = await this.userRepository.create(user);
-    const savedUser = await this.userRepository.save(newUser);
-
-    if (currentUser.role === Role.ADMIN) {
-      const adminManager = new AdminManager();
-      adminManager.admin = currentUser;
-      adminManager.manager = savedUser;
-
-      await this.adminManagerRepository.save(adminManager);
-    }
-
-    return savedUser;
   }
 
   async login(loginDto: LoginDto): Promise<{ token: string }> {
-    const user = await this.userRepository.findOne({
-      where: { email: loginDto.email },
-    });
+    try {
+      const user = await this.userRepository.findOne({
+        where: { email: loginDto.email },
+      });
 
-    if (!user) {
-      throw new HttpException('Invalid credentials', 401);
+      if (!user) {
+        throw new HttpException(
+          "This user doesn't exist",
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      const isPasswordValid = await bcrypt.compare(
+        loginDto.password,
+        user.password,
+      );
+      if (!isPasswordValid) {
+        throw new HttpException('Password is wrong', HttpStatus.BAD_REQUEST);
+      }
+
+      const token = await jwt.sign(
+        { id: user.id, role: user.role },
+        process.env.JWT_SECRET_KEY,
+        {
+          expiresIn: '1h',
+        },
+      );
+
+      return { token };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'An unexpected error occurred',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
-
-    const isPasswordValid = await bcrypt.compare(
-      loginDto.password,
-      user.password,
-    );
-    if (!isPasswordValid) {
-      throw new HttpException('Invalid credentials', 401);
-    }
-
-    const token = await jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET_KEY,
-      {
-        expiresIn: '1h',
-      },
-    );
-
-    return { token };
   }
 
   async assignManagerToStore(
     assignManagerToStoreDto: AssignManagerToStoreDto,
     currentUser: User,
-  ) {
-    const adminManager = await this.adminManagerRepository.findOne({
-      where: {
-        admin: { id: currentUser.id },
-        manager: { id: assignManagerToStoreDto.userId },
-      },
-    });
+  ): Promise<{ message: string }> {
+    try {
+      const adminManager = await this.adminManagerRepository.findOne({
+        where: {
+          admin: { id: currentUser.id },
+          manager: { id: assignManagerToStoreDto.userId },
+        },
+      });
 
-    if (!adminManager) {
+      if (!adminManager) {
+        throw new HttpException(
+          'You are not allowed to assign manager to store',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const bookStore = await this.bookStoreRepository.findOne({
+        where: { id: assignManagerToStoreDto.bookStoreId },
+      });
+
+      if (!bookStore) {
+        throw new HttpException('Book store not found', HttpStatus.NOT_FOUND);
+      }
+
+      const bookStoreManager = new BookStoreManager();
+      bookStoreManager.bookStore = bookStore;
+      bookStoreManager.user = await this.userRepository.findOne({
+        where: { id: assignManagerToStoreDto.userId },
+      });
+
+      await this.bookStoreManagerRepository.save(bookStoreManager);
+
+      return { message: 'Manager assigned to store successfully' };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
-        'You are not allowed to assign manager to store',
-        403,
+        'An unexpected error occurred',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-
-    const bookStore = await this.bookStoreRepository.findOne({
-      where: { id: assignManagerToStoreDto.storeId },
-    });
-
-    if (!bookStore) {
-      throw new HttpException('Book store not found', 404);
-    }
-
-    const bookStoreManager = new BookStoreManager();
-    bookStoreManager.bookStore = bookStore;
-    bookStoreManager.user = await this.userRepository.findOne({
-      where: { id: assignManagerToStoreDto.userId },
-    });
-
-    return this.bookStoreManagerRepository.save(bookStoreManager);
   }
 }

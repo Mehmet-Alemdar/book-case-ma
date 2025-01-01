@@ -1,4 +1,4 @@
-import { Injectable, HttpException } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
@@ -18,26 +18,39 @@ export class BookStoreService {
   async createBookStore(
     createBookStoreDto: CreateBookStoreDto,
     currentUser: User,
-  ) {
-    const bookStore = createBookStoreDto;
+  ): Promise<{ message: string }> {
+    try {
+      const bookStore = createBookStoreDto;
 
-    const existingBookStore = await this.bookStoreRepository.findOne({
-      where: { name: bookStore.name },
-    });
-    if (existingBookStore) {
-      throw new HttpException('Book store already exists', 400);
+      const existingBookStore = await this.bookStoreRepository.findOne({
+        where: { name: bookStore.name },
+      });
+      if (existingBookStore) {
+        throw new HttpException(
+          'Book store already exists',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const newBookStore = await this.bookStoreRepository.create(bookStore);
+      const sadevBookStore = await this.bookStoreRepository.save(newBookStore);
+
+      const bookStoreManager = new BookStoreManager();
+      bookStoreManager['bookStore'] = sadevBookStore;
+      bookStoreManager['user'] = currentUser;
+
+      await this.bookStoreManagerRepository.save(bookStoreManager);
+
+      return { message: 'Book store created successfully' };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'An unexpected error occurred',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
-
-    const newBookStore = await this.bookStoreRepository.create(bookStore);
-    const sadevBookStore = await this.bookStoreRepository.save(newBookStore);
-
-    const bookStoreManager = new BookStoreManager();
-    bookStoreManager['bookStore'] = sadevBookStore;
-    bookStoreManager['user'] = currentUser;
-
-    await this.bookStoreManagerRepository.save(bookStoreManager);
-
-    return bookStoreManager;
   }
 
   async findAllBookStores(

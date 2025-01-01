@@ -1,4 +1,4 @@
-import { Injectable, HttpException } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MoreThan, Repository, ILike } from 'typeorm';
 import { Book } from './book.entity';
@@ -31,7 +31,7 @@ export class BookService {
       });
       console.log(bookStore);
       if (!bookStore) {
-        throw new HttpException('Book store not found', 404);
+        throw new HttpException('Book store not found', HttpStatus.NOT_FOUND);
       }
 
       const book = createBookDto;
@@ -42,7 +42,7 @@ export class BookService {
         where: { name: book.name, bookStore: bookStore },
       });
       if (existingBook) {
-        throw new HttpException('Book already exists', 400);
+        throw new HttpException('Book already exists', HttpStatus.BAD_REQUEST);
       }
 
       const newBook = await this.bookRepository.create(book);
@@ -55,7 +55,7 @@ export class BookService {
       }
       throw new HttpException(
         'An unexpected error occurred',
-        error.status || 500,
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -66,13 +66,13 @@ export class BookService {
         where: { id: updateBookQuantityDto.bookStoreId },
       });
       if (!bookStore) {
-        throw new HttpException('Book store not found', 404);
+        throw new HttpException('Book store not found', HttpStatus.NOT_FOUND);
       }
       const book = await this.bookRepository.findOne({
         where: { id: updateBookQuantityDto.bookId, bookStore: bookStore },
       });
       if (!book) {
-        throw new HttpException('Book not found', 404);
+        throw new HttpException('Book not found', HttpStatus.NOT_FOUND);
       }
 
       book.quantity = updateBookQuantityDto.quantity;
@@ -84,7 +84,7 @@ export class BookService {
       }
       throw new HttpException(
         'An unexpected error occurred',
-        error.status || 500,
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

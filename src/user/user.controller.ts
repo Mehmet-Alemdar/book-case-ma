@@ -14,6 +14,7 @@ import { User } from './entities/user.entity';
 import { User as UserDecorator } from '../auth/user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RoleGuard } from '../auth/role.guard';
+import { BookStoreManagerGuard } from '../auth/book-manager.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from './role.enum';
 
@@ -34,7 +35,7 @@ export class UserController {
   async createUser(
     @Body() createUserDto: CreateUserDto,
     @UserDecorator() currentUser: User,
-  ): Promise<User> {
+  ): Promise<{ message: string }> {
     return this.userService.createUser(createUserDto, currentUser);
   }
 
@@ -45,13 +46,13 @@ export class UserController {
   }
 
   @Post('assign-manager-to-store')
-  @UseGuards(JwtAuthGuard, RoleGuard)
+  @UseGuards(JwtAuthGuard, RoleGuard, BookStoreManagerGuard)
   @Roles(Role.ADMIN)
   @UsePipes(new ValidationPipe())
   async assignManagerToStore(
     @Body() assignManagerToStoreDto: AssignManagerToStoreDto,
     @UserDecorator() currentUser: User,
-  ) {
+  ): Promise<{ message: string }> {
     return this.userService.assignManagerToStore(
       assignManagerToStoreDto,
       currentUser,
