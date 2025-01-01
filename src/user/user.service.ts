@@ -25,7 +25,9 @@ export class UserService {
     private bookStoreManagerRepository: Repository<BookStoreManager>,
   ) {}
 
-  async createAdmin(createUserDto: CreateUserDto): Promise<User> {
+  async createAdmin(
+    createUserDto: CreateUserDto,
+  ): Promise<{ message: string }> {
     try {
       const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
@@ -44,7 +46,9 @@ export class UserService {
       }
 
       const user = this.userRepository.create(admin);
-      return this.userRepository.save(user);
+      await this.userRepository.save(user);
+
+      return { message: 'Admin created successfully' };
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;

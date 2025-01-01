@@ -24,7 +24,9 @@ export class UserController {
 
   @Post('admin')
   @UsePipes(new ValidationPipe())
-  async createAdmin(@Body() createUserDto: CreateUserDto): Promise<User> {
+  async createAdmin(
+    @Body() createUserDto: CreateUserDto,
+  ): Promise<{ message: string }> {
     return this.userService.createAdmin(createUserDto);
   }
 
