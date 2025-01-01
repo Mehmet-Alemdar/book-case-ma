@@ -330,3 +330,8 @@ $ npm run start:prod
 >    "limit": "1"
 >}
 >```
+## Technology Stack:
+- **Nest.js**
+- **TypeScript**
+- **PostgreSQL**
+- **TypeORM**
