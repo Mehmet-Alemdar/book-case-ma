@@ -24,7 +24,7 @@ export class BookService {
       const bookStore = await this.bookStoreRepository.findOne({
         where: { id: createBookDto.bookStoreId },
       });
-      console.log(bookStore);
+
       if (!bookStore) {
         throw new HttpException('Book store not found', HttpStatus.NOT_FOUND);
       }
