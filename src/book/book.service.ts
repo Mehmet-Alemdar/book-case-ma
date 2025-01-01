@@ -4,7 +4,6 @@ import { MoreThan, Repository, ILike } from 'typeorm';
 import { Book } from './book.entity';
 import { User } from 'src/user/entities/user.entity';
 import { BookStore } from 'src/book-store/entities/book-store.entity';
-import { BookStoreManager } from 'src/book-store/entities/book-store-manager.entity';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookQuantityDto } from './dto/update-quantity-book.dto';
 
@@ -15,10 +14,6 @@ export class BookService {
     private bookRepository: Repository<Book>,
     @InjectRepository(BookStore)
     private bookStoreRepository: Repository<BookStore>,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    @InjectRepository(BookStoreManager)
-    private bookStoreManagerRepository: Repository<BookStoreManager>,
   ) {}
 
   async createBook(
