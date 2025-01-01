@@ -1,32 +1,65 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# API Workflow and Recommended Usage Order
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+This API operates within a system that supports multiple admins, bookstores, and managers. Each admin can manage their own bookstore and managers, but they cannot interfere with the bookstores or managers created by other admins. The following is a step-by-step guide to the API’s workflow and the order in which actions should be performed:
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 1. Create an Admin
+The first step is to create an admin. In order to perform other actions and manage the system, you need to have an admin user.
 
-## Description
+- **Admin creation** can only be performed by an **admin user**.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 2. Create Managers and Bookstores
+Once an admin is created, managers (store managers) and bookstores can be created. An admin can create multiple bookstores, and for each bookstore, they can assign different managers.
+
+- **Bookstores must be created first** before creating any books. This means that you need a bookstore to add books to it.
+- Managers can be created, but they will only have permissions over the bookstores they are assigned to. Each manager can only manage the bookstore they are assigned to.
+
+## 3. Assign a Manager to a Bookstore
+For a manager to perform actions on a bookstore, they must be assigned to it.
+
+- **Manager assignment** can only be done by an **admin**.
+- A manager can only perform actions in the bookstore they are assigned to.
+
+## 4. Create Books
+Once a bookstore is created, you can proceed to create books for that bookstore.
+
+- **Books can only be created** after at least one bookstore has been created.
+
+## 5. Update Book Quantity
+A manager can update the quantity of books, but only for the bookstore they are assigned to.
+
+- A **manager can only update the quantity of books** in the bookstore they are assigned to.
+- **Admin users** can update the book quantities for all bookstores.
+
+---
+
+## Roles and Permissions:
+- **Admins**: There can be multiple admins in the system. Each admin can manage their own bookstores and managers. Admins can perform any action, such as creating bookstores, managers, and updating book quantities.
+- **Managers**: Managers can only perform actions in the bookstores they are assigned to. Managers can update book quantities but only in their assigned bookstore.
+
+---
+
+## Usage Order:
+1. **Create an Admin** (first step).
+2. The admin can create **managers** and **bookstores**.
+3. A **bookstore must be created** before adding any books.
+4. If a manager is to update the **book quantity**, they must first be assigned to the relevant bookstore.
+5. **Managers can only manage their assigned bookstore**.
+
 
 ## Project setup
+## .env File Configuration
+
+Before running the project, make sure to create a `.env` file in the root directory of your project with the following content:
+
+```env
+# Database Configuration
+DB_USER_NAME=your_database_username
+DB_PASSWORD=your_database_password
+DB_NAME=your_database_name
+
+# JWT Secret Key for Authentication
+JWT_SECRET_KEY=your_secret_key
+```
 
 ```bash
 $ npm install
@@ -44,56 +77,256 @@ $ npm run start:dev
 # production mode
 $ npm run start:prod
 ```
-
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+# Usage
+## User operations 🙍
+### Admin Create
+> ```http
+> POST http://localhost:3000/user/admin
+> ````
+> Sample Request
+>```json
+>{
+>    "username": "admin1",
+>    "email": "admin1@mail.com",
+>    "password": "Password1!"
+>}
+>```
+> Returning Answer
+>```json
+>{
+>    "message": "Admin created successfully"
+>}
+>```
+### Login
+> ```http
+> POST http://localhost:3000/user/login
+> ````
+> Sample Request
+>```json
+>{
+>    "email": "admin1@mail.com",
+>    "password": "Password1!"
+>}
+>```
+> Returning Answer
+>```json
+>{
+>    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTksInJvbGUiOiJzdG9yZV9tYW5hZ2VyIiwiaWF0IjoxNzM1NzUyNjE5LCJleHAiOjE3MzU3NTYyMTl9.Z0aDCm6gwQCUhZ916cmrRVCrZXZHNv0MRR511k8OpAo"
+>}
+>```
+### Store Manager Create
+>🚨 Only **admins** can perform this action!
+>
+>⚠️ Be sure to add the token information returned from the API to the headers.
+> ```bash
+> authorization: token returned from api
+> ```
+> ```http
+> POST http://localhost:3000/user/create
+> ````
+> Sample Request
+>```json
+>{
+>    "username": "manager1",
+>    "email": "manager1@mail.com",
+>    "password": "Password1!"
+>}
+>```
+> Returning Answer
+>```json
+>{
+>    "message": "User created successfully"
+>}
+>```
+### Book Store Create
+>🚨 Only **admins** can perform this action!
+>
+>⚠️ Be sure to add the token information returned from the API to the headers.
+> ```bash
+> authorization: token returned from api
+> ```
+> ```http
+> POST http://localhost:3000/book-store/create
+> ````
+> Sample Request
+>```json
+>{
+>    "name": "House Book Store",
+>    "address": "Izmir, Turkey"
+>}
+>```
+> Returning Answer
+>```json
+>{
+>    "message": "Book store created successfully"
+>}
+>```
+### Book Create
+>🚨 Only **admins** can perform this action!
+>
+>⚠️ Be sure to add the token information returned from the API to the headers.
+> ```bash
+> authorization: token returned from api
+> ```
+> ```http
+> POST http://localhost:3000/book/create
+> ````
+> Sample Request
+>```json
+>{
+>    "name": "Green Book",
+>    "price": 34,
+>    "bookStoreId": {book_store_db_id},
+>    "quantity": 42
+>}
+>```
+> Returning Answer
+>```json
+>{
+>    "message": "Book created successfully",
+>    "data": {
+>        "name": "Green Book",
+>        "price": 34,
+>        "quantity": 42,
+>        "bookStore": {
+>            "id": 13,
+>            "name": "House Book Store",
+>            "address": "Izmir, Turkey"
+>        },
+>        "id": 24
+>    }
+>}
+>```
+### Assign a Manager to the Store
+>🚨 Only **admins** can perform this action!
+>
+>⚠️ Be sure to add the token information returned from the API to the headers.
+> ```bash
+> authorization: token returned from api
+> ```
+> ```http
+> POST http://localhost:3000/user/assign-manager-to-store
+> ````
+> Sample Request
+>```json
+>{
+>    "userId": {manager_db_id},
+>    "bookStoreId": {book_store_db_id}
+>}
+>```
+> Returning Answer
+>```json
+>{
+>    "message": "Manager assigned to store successfully"
+>}
+>```
+### Update Book Quantity
+> 🚨 Only **admins** or **managers** who have been authorized by their respective admin for the bookstore can perform this action!
+>
+>⚠️ Be sure to add the token information returned from the API to the headers.
+> ```bash
+> authorization: token returned from api
+> ```
+> ```http
+> PUT http://localhost:3000/book/update-quantity
+> ````
+> Sample Request
+>```json
+>{
+>    "bookId": {book_db_id},
+>    "bookStoreId": {book_store_db_id},
+>    "quantity": 35
+>}
+>```
+> Returning Answer
+>```json
+>{
+>    "message": "Book quantity updated successfully",
+>}
+>```
+### Get All Bookstores
+> 🔄 **limit** and **page** queries are optional.
+> ```http
+> GET http://localhost:3000/book-store?page=1&limit=1
+> ````
+> Returning Answer
+>```json
+>{
+>    "data": [
+>        {
+>            "id": 11,
+>            "name": "Admin1 Book Store",
+>            "address": "Izmir, Turkey"
+>        },
+>        {
+>            "id": 12,
+>            "name": "Admin1 Second Book Store",
+>            "address": "Ankara, Turkey"
+>        },
+>        {
+>            "id": 13,
+>            "name": "Admin2 Book Store",
+>            "address": "Adana, Turkey"
+>        }
+>    ],
+>    "total": 3,
+>    "currentPage": 1,
+>    "limit": 1
+>}
+>```
+### Get Books by Bookstore ID
+> ⚠️ The **bookStoreId** query parameter is required.
+> 
+> 🔄 **limit** and **page** queries are optional.
+> ```http
+> GET http://localhost:3000/book/list?bookStoreId=13&limit=1&page=1
+> ````
+> Returning Answer
+>```json
+>{
+>    "data": [
+>        {
+>            "id": 22,
+>            "name": "Green Book",
+>            "price": 34,
+>            "quantity": 35,
+>            "bookStore": {
+>                "id": 13,
+>                "name": "Admin2 Book Store",
+>                "address": "Adana, Turkey"
+>            }
+>        }
+>    ],
+>    "total": 3,
+>    "currentPage": "1",
+>    "limit": "1"
+>}
+>```
+### Search for a Book by Name
+> ⚠️ The **search** query parameter is required.
+> 
+> 🔄 **limit** and **page** queries are optional.
+> ```http
+> GET http://localhost:3000/book/search?search=Green&limit=1&page=1
+> ````
+> Returning Answer
+>```json
+>{
+>    "data": [
+>        {
+>            "id": 22,
+>            "name": "Green Book",
+>            "price": 34,
+>            "quantity": 35,
+>            "bookStore": {
+>                "id": 13,
+>                "name": "Admin2 Book Store",
+>                "address": "Adana, Turkey"
+>            }
+>        }
+>    ],
+>    "total": 3,
+>    "currentPage": "1",
+>    "limit": "1"
+>}
+>```
